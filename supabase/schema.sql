@@ -1,5 +1,6 @@
 -- Stud'Angers — schema initial (Étape 5)
--- À exécuter une fois dans l'éditeur SQL de ton projet Supabase.
+-- À exécuter dans l'éditeur SQL de ton projet Supabase.
+-- Ce script est idempotent : tu peux le relancer sans risque.
 
 -- 1. Profils étudiants (complète auth.users)
 create table if not exists public.profiles (
@@ -16,14 +17,17 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+drop policy if exists "Un utilisateur peut lire son propre profil" on public.profiles;
 create policy "Un utilisateur peut lire son propre profil"
   on public.profiles for select
   using (auth.uid() = id);
 
+drop policy if exists "Un utilisateur peut créer son propre profil" on public.profiles;
 create policy "Un utilisateur peut créer son propre profil"
   on public.profiles for insert
   with check (auth.uid() = id);
 
+drop policy if exists "Un utilisateur peut modifier son propre profil" on public.profiles;
 create policy "Un utilisateur peut modifier son propre profil"
   on public.profiles for update
   using (auth.uid() = id);
@@ -44,6 +48,9 @@ create table if not exists public.partners (
 
 alter table public.partners enable row level security;
 
+create unique index if not exists partners_name_idx on public.partners (name);
+
+drop policy if exists "Tout le monde peut lire les partenaires" on public.partners;
 create policy "Tout le monde peut lire les partenaires"
   on public.partners for select
   using (true);
@@ -56,7 +63,7 @@ values
   ('Saint-Laud Pub', 'Pub étudiant historique, écrans pour le sport et grand choix de bières.', '12 Rue Saint-Laud, 49100 Angers', 47.4713, -0.5567, '16:00', '19:00', 'Planche apéro offerte dès 3 pintes'),
   ('Le Comptoir Étudiant', 'À deux pas de la fac, l''adresse préférée pour réviser puis décompresser.', '3 Boulevard Foch, 49100 Angers', 47.4695, -0.5528, '17:00', '20:30', 'Café offert de 14h à 17h sur présentation de la carte'),
   ('La Buvette Angevine', 'Guinguette au bord de la Maine, DJ sets le jeudi soir.', '1 Rue de la Poissonnerie, 49100 Angers', 47.4739, -0.5619, '18:00', '20:00', 'Shooter offert pour toute commande')
-on conflict do nothing;
+on conflict (name) do nothing;
 
 -- 3. Statuts éphémères
 create table if not exists public.statuses (
@@ -72,22 +79,33 @@ create table if not exists public.statuses (
 
 alter table public.statuses enable row level security;
 
+drop policy if exists "Les utilisateurs connectés peuvent lire les statuts actifs" on public.statuses;
 create policy "Les utilisateurs connectés peuvent lire les statuts actifs"
   on public.statuses for select
   to authenticated
   using (expires_at > now());
 
+drop policy if exists "Un utilisateur peut créer ses propres statuts" on public.statuses;
 create policy "Un utilisateur peut créer ses propres statuts"
   on public.statuses for insert
   to authenticated
   with check (auth.uid() = user_id);
 
+drop policy if exists "Un utilisateur peut supprimer ses propres statuts" on public.statuses;
 create policy "Un utilisateur peut supprimer ses propres statuts"
   on public.statuses for delete
   to authenticated
   using (auth.uid() = user_id);
 
-alter publication supabase_realtime add table public.statuses;
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'statuses'
+  ) then
+    alter publication supabase_realtime add table public.statuses;
+  end if;
+end $$;
 
 -- 4. Événements étudiants
 create table if not exists public.events (
@@ -101,6 +119,9 @@ create table if not exists public.events (
 
 alter table public.events enable row level security;
 
+create unique index if not exists events_title_idx on public.events (title);
+
+drop policy if exists "Tout le monde peut lire les événements" on public.events;
 create policy "Tout le monde peut lire les événements"
   on public.events for select
   using (true);
@@ -110,4 +131,4 @@ values
   ('Soirée d''intégration BDE', 'Soirée de rentrée organisée par le BDE, ambiance garantie.', now() + interval '3 days', 'Le Chabada, Angers'),
   ('Tournoi de futsal inter-écoles', 'Tournoi amical entre étudiants des écoles angevines.', now() + interval '7 days', 'Complexe sportif Jean Bouin'),
   ('Concert étudiant au Chabada', 'Scène ouverte aux groupes étudiants angevins.', now() + interval '10 days', 'Le Chabada, Angers')
-on conflict do nothing;
+on conflict (title) do nothing;
