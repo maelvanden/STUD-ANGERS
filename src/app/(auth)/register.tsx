@@ -9,8 +9,10 @@ import { AuthBackground } from '@/components/auth-background';
 import { ChipSelector } from '@/components/form/chip-selector';
 import { PrimaryButton } from '@/components/form/primary-button';
 import { TextField } from '@/components/form/text-field';
+import { CreatingAccount } from '@/components/onboarding/creating-account';
+import { Mascot } from '@/components/onboarding/mascot';
 import { OnboardingProgress } from '@/components/onboarding/onboarding-progress';
-import { StepIcon } from '@/components/onboarding/step-icon';
+import { TypewriterText } from '@/components/onboarding/typewriter-text';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { INTEREST_TAGS, SCHOOLS } from '@/constants/profile-options';
@@ -18,6 +20,7 @@ import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
 import { useTheme } from '@/hooks/use-theme';
 import { translateAuthError } from '@/lib/auth-errors';
+import { errorHaptic, successHaptic, tapHaptic } from '@/lib/haptics';
 import { isValidEmail } from '@/lib/validation';
 import type { InterestTagId } from '@/types/profile';
 
@@ -25,12 +28,36 @@ const SCHOOL_CHIPS = SCHOOLS.map((school) => ({ id: school, label: school }));
 const TAG_CHIPS = INTEREST_TAGS.map((tag) => ({ id: tag.id, label: tag.label }));
 
 const STEPS = [
-  { icon: 'mail-outline', title: 'Créons ton compte', subtitle: 'Ton email étudiant et un mot de passe' },
-  { icon: 'happy-outline', title: 'Comment tu t’appelles ?', subtitle: 'Et quel âge as-tu ?' },
-  { icon: 'school-outline', title: 'Tu étudies où ?', subtitle: 'Choisis ton école ou ta fac' },
-  { icon: 'chatbubble-ellipses-outline', title: 'Parle-nous un peu de toi', subtitle: 'Optionnel, quelques mots suffisent' },
-  { icon: 'sparkles-outline', title: 'Tes centres d’intérêt', subtitle: 'Pour te proposer les bons plans qui te correspondent' },
-  { icon: 'rocket-outline', title: 'Prêt·e à décoller ?', subtitle: 'Vérifie tes infos avant de rejoindre l’aventure' },
+  {
+    icon: 'mail-outline',
+    title: 'Salut, moi c’est Angie \u{1F44B}',
+    subtitle: 'Je vais t’aider à créer ton compte. Ton email et un mot de passe pour commencer ?',
+  },
+  {
+    icon: 'happy-outline',
+    title: 'Enchantée !',
+    subtitle: 'Comment tu t’appelles, et tu as quel âge ?',
+  },
+  {
+    icon: 'school-outline',
+    title: 'Tu étudies où ?',
+    subtitle: 'Choisis ton école ou ta fac',
+  },
+  {
+    icon: 'chatbubble-ellipses-outline',
+    title: 'Parle-moi un peu de toi',
+    subtitle: 'Optionnel, mais j’adore en savoir plus \u{1F60A}',
+  },
+  {
+    icon: 'sparkles-outline',
+    title: 'Dernière question !',
+    subtitle: 'Qu’est-ce qui te fait vibrer ?',
+  },
+  {
+    icon: 'rocket-outline',
+    title: 'Prêt·e ?',
+    subtitle: 'Vérifie tes infos avant de plonger',
+  },
 ] as const;
 
 type FormErrors = Partial<Record<'email' | 'password' | 'firstName' | 'age' | 'school' | 'submit', string>>;
@@ -80,12 +107,17 @@ export default function RegisterScreen() {
   function handleNext() {
     const nextErrors = validateStep(step);
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
+    if (Object.keys(nextErrors).length > 0) {
+      errorHaptic();
+      return;
+    }
+    tapHaptic();
     setDirection('forward');
     setStep((current) => current + 1);
   }
 
   function handleBack() {
+    tapHaptic();
     setErrors({});
     setDirection('backward');
     setStep((current) => current - 1);
@@ -104,22 +136,28 @@ export default function RegisterScreen() {
       bio: bio.trim(),
       tags,
     });
-    setIsSubmitting(false);
 
     if (!result.success) {
+      setIsSubmitting(false);
+      errorHaptic();
       setErrors({ submit: translateAuthError(result.error) });
       return;
     }
     if (result.needsEmailConfirmation) {
+      setIsSubmitting(false);
       setNeedsEmailConfirmation(true);
+      return;
     }
+    successHaptic();
+    // Keep isSubmitting true: the celebration stays on screen until the
+    // auth guard swaps to the tabs.
   }
 
   if (needsEmailConfirmation) {
     return (
       <AuthBackground>
         <SafeAreaView style={styles.confirmationSafeArea}>
-          <StepIcon name="mail-open-outline" stepKey={-1} />
+          <Mascot name="mail-open-outline" stepKey={-1} />
           <ThemedText type="title" style={styles.confirmationTitle}>
             Vérifie ta boîte mail 📬
           </ThemedText>
@@ -143,7 +181,7 @@ export default function RegisterScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         <SafeAreaView style={styles.flex}>
           <View style={styles.header}>
-            {step > 0 ? (
+            {step > 0 && !isSubmitting ? (
               <Pressable onPress={handleBack} hitSlop={12} style={styles.backButton}>
                 <Ionicons name="chevron-back" size={22} color={theme.text} />
               </Pressable>
@@ -154,138 +192,139 @@ export default function RegisterScreen() {
           </View>
 
           <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-            <StepIcon name={current.icon} stepKey={step} />
+            {isSubmitting ? (
+              <CreatingAccount firstName={firstName} />
+            ) : (
+              <>
+                <Mascot name={current.icon} stepKey={step} />
 
-            <Animated.View key={step} entering={AnimatedStep.duration(280)} exiting={AnimatedStepOut.duration(200)}>
-              <View style={styles.stepHeader}>
-                <ThemedText type="title" style={styles.title}>
-                  {current.title}
-                </ThemedText>
-                <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-                  {current.subtitle}
-                </ThemedText>
-              </View>
-
-              <View style={styles.form}>
-                {step === 0 ? (
-                  <>
-                    <TextField
-                      label="Email étudiant"
-                      placeholder="prenom.nom@etu.univ-angers.fr"
-                      autoCapitalize="none"
-                      autoComplete="email"
-                      keyboardType="email-address"
-                      value={email}
-                      onChangeText={setEmail}
-                      error={errors.email}
-                    />
-                    <TextField
-                      label="Mot de passe"
-                      placeholder="6 caractères minimum"
-                      secureTextEntry
-                      autoCapitalize="none"
-                      autoComplete="password-new"
-                      value={password}
-                      onChangeText={setPassword}
-                      error={errors.password}
-                    />
-                  </>
-                ) : null}
-
-                {step === 1 ? (
-                  <>
-                    <TextField
-                      label="Prénom"
-                      placeholder="Camille"
-                      value={firstName}
-                      onChangeText={setFirstName}
-                      error={errors.firstName}
-                    />
-                    <TextField
-                      label="Âge"
-                      placeholder="20"
-                      keyboardType="number-pad"
-                      value={age}
-                      onChangeText={setAge}
-                      error={errors.age}
-                    />
-                  </>
-                ) : null}
-
-                {step === 2 ? (
-                  <View style={styles.fieldGroup}>
-                    <ChipSelector chips={SCHOOL_CHIPS} selected={school ? [school] : []} onToggle={setSchool} />
-                    {errors.school ? (
-                      <ThemedText type="small" style={{ color: theme.danger }}>
-                        {errors.school}
-                      </ThemedText>
-                    ) : null}
+                <Animated.View key={step} entering={AnimatedStep.duration(280)} exiting={AnimatedStepOut.duration(200)}>
+                  <View style={styles.stepHeader}>
+                    <TypewriterText key={step} text={current.title} type="title" style={styles.title} />
+                    <ThemedText themeColor="textSecondary" style={styles.subtitle}>
+                      {current.subtitle}
+                    </ThemedText>
                   </View>
-                ) : null}
 
-                {step === 3 ? (
-                  <TextField
-                    label="Bio"
-                    placeholder="Quelques mots sur toi..."
-                    multiline
-                    numberOfLines={4}
-                    maxLength={200}
-                    value={bio}
-                    onChangeText={setBio}
-                    style={styles.bioInput}
-                  />
-                ) : null}
+                  <View style={styles.form}>
+                    {step === 0 ? (
+                      <>
+                        <TextField
+                          label="Email étudiant"
+                          placeholder="prenom.nom@etu.univ-angers.fr"
+                          autoCapitalize="none"
+                          autoComplete="email"
+                          keyboardType="email-address"
+                          value={email}
+                          onChangeText={setEmail}
+                          error={errors.email}
+                        />
+                        <TextField
+                          label="Mot de passe"
+                          placeholder="6 caractères minimum"
+                          secureTextEntry
+                          autoCapitalize="none"
+                          autoComplete="password-new"
+                          value={password}
+                          onChangeText={setPassword}
+                          error={errors.password}
+                        />
+                      </>
+                    ) : null}
 
-                {step === 4 ? (
-                  <ChipSelector chips={TAG_CHIPS} selected={tags} onToggle={toggleTag} />
-                ) : null}
+                    {step === 1 ? (
+                      <>
+                        <TextField
+                          label="Prénom"
+                          placeholder="Camille"
+                          value={firstName}
+                          onChangeText={setFirstName}
+                          error={errors.firstName}
+                        />
+                        <TextField
+                          label="Âge"
+                          placeholder="20"
+                          keyboardType="number-pad"
+                          value={age}
+                          onChangeText={setAge}
+                          error={errors.age}
+                        />
+                      </>
+                    ) : null}
 
-                {isLastStep ? (
-                  <ThemedView type="backgroundElement" style={[styles.recapCard, { borderColor: theme.border }]}>
-                    <ThemedText type="smallBold">
-                      {firstName}, {age} ans
-                    </ThemedText>
-                    <ThemedText themeColor="textSecondary" type="small">
-                      {school}
-                    </ThemedText>
-                    {bio ? <ThemedText type="small">{bio}</ThemedText> : null}
-                    {tags.length > 0 ? (
-                      <View style={styles.recapTags}>
-                        {tags.map((tagId) => {
-                          const tag = INTEREST_TAGS.find((item) => item.id === tagId);
-                          return (
-                            <ThemedView key={tagId} type="backgroundSelected" style={styles.recapTag}>
-                              <ThemedText type="small">{tag?.label ?? tagId}</ThemedText>
-                            </ThemedView>
-                          );
-                        })}
+                    {step === 2 ? (
+                      <View style={styles.fieldGroup}>
+                        <ChipSelector chips={SCHOOL_CHIPS} selected={school ? [school] : []} onToggle={setSchool} />
+                        {errors.school ? (
+                          <ThemedText type="small" style={{ color: theme.danger }}>
+                            {errors.school}
+                          </ThemedText>
+                        ) : null}
                       </View>
                     ) : null}
-                  </ThemedView>
+
+                    {step === 3 ? (
+                      <TextField
+                        label="Bio"
+                        placeholder="Quelques mots sur toi..."
+                        multiline
+                        numberOfLines={4}
+                        maxLength={200}
+                        value={bio}
+                        onChangeText={setBio}
+                        style={styles.bioInput}
+                      />
+                    ) : null}
+
+                    {step === 4 ? <ChipSelector chips={TAG_CHIPS} selected={tags} onToggle={toggleTag} /> : null}
+
+                    {isLastStep ? (
+                      <ThemedView type="backgroundElement" style={[styles.recapCard, { borderColor: theme.border }]}>
+                        <ThemedText type="smallBold">
+                          {firstName}, {age} ans
+                        </ThemedText>
+                        <ThemedText themeColor="textSecondary" type="small">
+                          {school}
+                        </ThemedText>
+                        {bio ? <ThemedText type="small">{bio}</ThemedText> : null}
+                        {tags.length > 0 ? (
+                          <View style={styles.recapTags}>
+                            {tags.map((tagId) => {
+                              const tag = INTEREST_TAGS.find((item) => item.id === tagId);
+                              return (
+                                <ThemedView key={tagId} type="backgroundSelected" style={styles.recapTag}>
+                                  <ThemedText type="small">{tag?.label ?? tagId}</ThemedText>
+                                </ThemedView>
+                              );
+                            })}
+                          </View>
+                        ) : null}
+                      </ThemedView>
+                    ) : null}
+
+                    {errors.submit ? (
+                      <ThemedText type="small" style={{ color: theme.danger }}>
+                        {errors.submit}
+                      </ThemedText>
+                    ) : null}
+
+                    <PrimaryButton
+                      label={isLastStep ? 'Créer mon compte' : 'Continuer'}
+                      onPress={isLastStep ? handleSubmit : handleNext}
+                    />
+                  </View>
+                </Animated.View>
+
+                {step === 0 ? (
+                  <View style={styles.footer}>
+                    <ThemedText themeColor="textSecondary">Déjà un compte ?</ThemedText>
+                    <Link href="/(auth)" asChild>
+                      <ThemedText type="linkPrimary">Se connecter</ThemedText>
+                    </Link>
+                  </View>
                 ) : null}
-
-                {errors.submit ? (
-                  <ThemedText type="small" style={{ color: theme.danger }}>
-                    {errors.submit}
-                  </ThemedText>
-                ) : null}
-
-                <PrimaryButton
-                  label={isLastStep ? 'Créer mon compte' : 'Continuer'}
-                  onPress={isLastStep ? handleSubmit : handleNext}
-                  loading={isSubmitting}
-                />
-              </View>
-            </Animated.View>
-
-            {step === 0 ? (
-              <View style={styles.footer}>
-                <ThemedText themeColor="textSecondary">Déjà un compte ?</ThemedText>
-                <Link href="/(auth)" asChild>
-                  <ThemedText type="linkPrimary">Se connecter</ThemedText>
-                </Link>
-              </View>
-            ) : null}
+              </>
+            )}
           </ScrollView>
         </SafeAreaView>
       </KeyboardAvoidingView>

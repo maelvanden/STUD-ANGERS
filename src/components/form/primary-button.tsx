@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { tapHaptic } from '@/lib/haptics';
 
 type Props = {
   label: string;
@@ -17,9 +18,14 @@ export function PrimaryButton({ label, onPress, loading, disabled, variant = 'pr
   const isDisabled = disabled || loading;
   const isPrimary = variant === 'primary';
 
+  function handlePress() {
+    tapHaptic();
+    onPress();
+  }
+
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
       disabled={isDisabled}
       style={({ pressed }) => [
         styles.button,
@@ -28,6 +34,7 @@ export function PrimaryButton({ label, onPress, loading, disabled, variant = 'pr
           borderColor: theme.tint,
           borderWidth: isPrimary ? 0 : 1,
           opacity: isDisabled ? 0.5 : pressed ? 0.85 : 1,
+          transform: [{ scale: pressed ? 0.97 : 1 }],
         },
       ]}>
       {loading ? (
