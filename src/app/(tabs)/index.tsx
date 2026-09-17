@@ -20,12 +20,20 @@ export default function HomeScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.container}>
         <ThemedView style={styles.header}>
-          <ThemedText type="title" style={styles.title}>
-            On fait quoi ce soir ?
-          </ThemedText>
-          <ThemedText themeColor="textSecondary" type="small">
-            Les statuts disparaissent après 12h.
-          </ThemedText>
+          <ThemedView style={styles.headerText}>
+            <ThemedText type="title" style={styles.title}>
+              On fait quoi ce soir ?
+            </ThemedText>
+            <ThemedText themeColor="textSecondary" type="small">
+              Les statuts disparaissent après 12h.
+            </ThemedText>
+          </ThemedView>
+          <Pressable
+            onPress={() => router.push('/conversations')}
+            hitSlop={12}
+            style={[styles.inboxButton, { backgroundColor: theme.backgroundElement }]}>
+            <Ionicons name="chatbubbles-outline" size={22} color={theme.tint} />
+          </Pressable>
         </ThemedView>
 
         {isLoading ? (
@@ -59,10 +67,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
     paddingBottom: Spacing.two,
+  },
+  headerText: {
+    flex: 1,
     gap: 2,
+  },
+  inboxButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     fontSize: 24,

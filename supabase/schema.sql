@@ -163,6 +163,47 @@ create policy "Un utilisateur peut se désinscrire d'un événement"
   to authenticated
   using (auth.uid() = user_id);
 
+-- 4ter. Messages privés (mini-chat lié à un statut)
+create table if not exists public.messages (
+  id uuid primary key default gen_random_uuid(),
+  status_id uuid not null references public.statuses (id) on delete cascade,
+  status_author_id uuid not null references auth.users (id) on delete cascade,
+  participant_id uuid not null references auth.users (id) on delete cascade,
+  sender_id uuid not null references auth.users (id) on delete cascade,
+  sender_name text not null,
+  content text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists messages_thread_idx on public.messages (status_id, participant_id, created_at);
+
+alter table public.messages enable row level security;
+
+drop policy if exists "Les participants d'une discussion peuvent la lire" on public.messages;
+create policy "Les participants d'une discussion peuvent la lire"
+  on public.messages for select
+  to authenticated
+  using (auth.uid() = status_author_id or auth.uid() = participant_id);
+
+drop policy if exists "Les participants d'une discussion peuvent écrire" on public.messages;
+create policy "Les participants d'une discussion peuvent écrire"
+  on public.messages for insert
+  to authenticated
+  with check (
+    auth.uid() = sender_id
+    and (auth.uid() = status_author_id or auth.uid() = participant_id)
+  );
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'messages'
+  ) then
+    alter publication supabase_realtime add table public.messages;
+  end if;
+end $$;
+
 -- 5. Stockage des photos de profil
 insert into storage.buckets (id, name, public)
 values ('avatars', 'avatars', true)

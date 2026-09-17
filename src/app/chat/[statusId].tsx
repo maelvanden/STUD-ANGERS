@@ -4,29 +4,35 @@ import { useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FullScreenLoader } from '@/components/full-screen-loader';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { useChat } from '@/context/chat-context';
+import { useAuth } from '@/context/auth-context';
+import { useChatMessages } from '@/hooks/use-chat-messages';
 import { useTheme } from '@/hooks/use-theme';
-import type { ChatMessage } from '@/types/status';
+import type { Message } from '@/types/message';
 
 export default function ChatScreen() {
-  const { statusId } = useLocalSearchParams<{ statusId: string }>();
-  const { getMessages, sendMessage } = useChat();
+  const { statusId, authorId, participantId } = useLocalSearchParams<{
+    statusId: string;
+    authorId: string;
+    participantId: string;
+  }>();
+  const { profile } = useAuth();
+  const { messages, isLoading, sendMessage } = useChatMessages(statusId, authorId, participantId);
   const theme = useTheme();
   const [draft, setDraft] = useState('');
-  const messages = getMessages(statusId);
 
   function handleSend() {
     const text = draft.trim();
     if (!text) return;
-    sendMessage(statusId)(text);
+    sendMessage(text);
     setDraft('');
   }
 
-  function renderMessage({ item }: { item: ChatMessage }) {
-    const isMine = item.author === 'me';
+  function renderMessage({ item }: { item: Message }) {
+    const isMine = item.senderId === profile?.id;
     return (
       <ThemedView
         type="backgroundElement"
@@ -35,7 +41,7 @@ export default function ChatScreen() {
           isMine ? styles.bubbleMine : styles.bubbleTheirs,
           { backgroundColor: isMine ? theme.tint : theme.backgroundElement },
         ]}>
-        <ThemedText style={{ color: isMine ? theme.background : theme.text }}>{item.text}</ThemedText>
+        <ThemedText style={{ color: isMine ? theme.background : theme.text }}>{item.content}</ThemedText>
       </ThemedView>
     );
   }
@@ -44,12 +50,21 @@ export default function ChatScreen() {
     <ThemedView style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex} keyboardVerticalOffset={90}>
         <SafeAreaView style={styles.flex} edges={['bottom']}>
-          <FlatList
-            data={messages}
-            keyExtractor={(item) => item.id}
-            renderItem={renderMessage}
-            contentContainerStyle={styles.list}
-          />
+          {isLoading ? (
+            <FullScreenLoader />
+          ) : (
+            <FlatList
+              data={messages}
+              keyExtractor={(item) => item.id}
+              renderItem={renderMessage}
+              contentContainerStyle={styles.list}
+              ListEmptyComponent={
+                <ThemedText themeColor="textSecondary" style={styles.emptyText}>
+                  Aucun message pour l&apos;instant. Lance la conversation !
+                </ThemedText>
+              }
+            />
+          )}
 
           <ThemedView type="backgroundElement" style={[styles.inputRow, { borderTopColor: theme.border }]}>
             <TextInput
@@ -78,8 +93,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   list: {
+    flexGrow: 1,
     padding: Spacing.four,
     gap: Spacing.two,
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: Spacing.six,
   },
   bubble: {
     maxWidth: '80%',

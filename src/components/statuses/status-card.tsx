@@ -7,7 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { STATUS_CATEGORIES } from '@/constants/status-categories';
 import { Spacing } from '@/constants/theme';
-import { useChat } from '@/context/chat-context';
+import { useAuth } from '@/context/auth-context';
 import { useTheme } from '@/hooks/use-theme';
 import { formatRelativeTime } from '@/lib/time-format';
 import type { Status } from '@/types/status';
@@ -18,12 +18,12 @@ type Props = {
 
 export function StatusCard({ status }: Props) {
   const theme = useTheme();
-  const { startThread } = useChat();
+  const { profile } = useAuth();
   const category = STATUS_CATEGORIES.find((item) => item.id === status.category);
 
   function handleInterested() {
-    startThread(status.id, status.authorName);
-    router.push(`/chat/${status.id}`);
+    if (!profile) return;
+    router.push(`/chat/${status.id}?authorId=${status.authorId}&participantId=${profile.id}`);
   }
 
   return (

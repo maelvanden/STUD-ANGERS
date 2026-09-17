@@ -21,6 +21,7 @@ type StatusRow = {
 function mapRow(row: StatusRow, myUserId: string | undefined): Status {
   return {
     id: row.id,
+    authorId: row.user_id,
     authorName: row.author_name,
     authorSchool: row.author_school,
     content: row.content,
