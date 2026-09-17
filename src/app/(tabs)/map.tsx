@@ -4,12 +4,13 @@ import { StyleSheet, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FullScreenLoader } from '@/components/full-screen-loader';
 import { PartnerList } from '@/components/partners/partner-list';
 import { SegmentedControl } from '@/components/segmented-control';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { PARTNERS } from '@/data/partners';
+import { usePartners } from '@/hooks/use-partners';
 import { useTheme } from '@/hooks/use-theme';
 import { isHappyHourActive } from '@/lib/happy-hour';
 
@@ -27,6 +28,7 @@ const VIEW_OPTIONS = [
 
 export default function MapScreen() {
   const theme = useTheme();
+  const { partners, isLoading } = usePartners();
   const [view, setView] = useState<(typeof VIEW_OPTIONS)[number]['id']>('map');
 
   return (
@@ -39,9 +41,11 @@ export default function MapScreen() {
           <SegmentedControl options={VIEW_OPTIONS} selectedId={view} onChange={(id) => setView(id as typeof view)} />
         </ThemedView>
 
-        {view === 'map' ? (
+        {isLoading ? (
+          <FullScreenLoader />
+        ) : view === 'map' ? (
           <MapView style={styles.map} initialRegion={ANGERS_REGION}>
-            {PARTNERS.map((partner) => (
+            {partners.map((partner) => (
               <Marker
                 key={partner.id}
                 coordinate={{ latitude: partner.latitude, longitude: partner.longitude }}

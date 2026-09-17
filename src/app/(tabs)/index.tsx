@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { FlatList, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FullScreenLoader } from '@/components/full-screen-loader';
 import { StatusCard } from '@/components/statuses/status-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -13,7 +14,7 @@ import type { Status } from '@/types/status';
 
 export default function HomeScreen() {
   const theme = useTheme();
-  const { statuses } = useStatuses();
+  const { statuses, isLoading } = useStatuses();
 
   return (
     <ThemedView style={styles.container}>
@@ -27,12 +28,21 @@ export default function HomeScreen() {
           </ThemedText>
         </ThemedView>
 
-        <FlatList<Status>
-          data={statuses}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <StatusCard status={item} />}
-          contentContainerStyle={styles.list}
-        />
+        {isLoading ? (
+          <FullScreenLoader />
+        ) : (
+          <FlatList<Status>
+            data={statuses}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <StatusCard status={item} />}
+            contentContainerStyle={styles.list}
+            ListEmptyComponent={
+              <ThemedText themeColor="textSecondary" style={styles.emptyText}>
+                Aucun statut pour le moment. Sois le premier à proposer quelque chose !
+              </ThemedText>
+            }
+          />
+        )}
 
         <Pressable
           onPress={() => router.push('/new-status')}
@@ -62,6 +72,11 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     gap: Spacing.three,
     paddingBottom: Spacing.six,
+    flexGrow: 1,
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: Spacing.six,
   },
   fab: {
     position: 'absolute',

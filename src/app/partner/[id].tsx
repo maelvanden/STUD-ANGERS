@@ -2,17 +2,23 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 
+import { FullScreenLoader } from '@/components/full-screen-loader';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { PARTNERS } from '@/data/partners';
+import { usePartners } from '@/hooks/use-partners';
 import { useTheme } from '@/hooks/use-theme';
 import { isHappyHourActive } from '@/lib/happy-hour';
 
 export default function PartnerDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
-  const partner = PARTNERS.find((item) => item.id === id);
+  const { partners, isLoading } = usePartners();
+  const partner = partners.find((item) => item.id === id);
+
+  if (isLoading) {
+    return <FullScreenLoader />;
+  }
 
   if (!partner) {
     return (

@@ -3,10 +3,12 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
 
 import { FullScreenLoader } from '@/components/full-screen-loader';
+import { SupabaseConfigNeeded } from '@/components/supabase-config-needed';
 import { AuthProvider, useAuth } from '@/context/auth-context';
 import { ChatProvider } from '@/context/chat-context';
 import { StatusesProvider } from '@/context/statuses-context';
 import { useTheme } from '@/hooks/use-theme';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 function RootNavigator() {
   const { isLoading, profile } = useAuth();
@@ -64,13 +66,17 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <AuthProvider>
-        <StatusesProvider>
-          <ChatProvider>
-            <RootNavigator />
-          </ChatProvider>
-        </StatusesProvider>
-      </AuthProvider>
+      {isSupabaseConfigured ? (
+        <AuthProvider>
+          <StatusesProvider>
+            <ChatProvider>
+              <RootNavigator />
+            </ChatProvider>
+          </StatusesProvider>
+        </AuthProvider>
+      ) : (
+        <SupabaseConfigNeeded />
+      )}
     </ThemeProvider>
   );
 }

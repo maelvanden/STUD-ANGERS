@@ -1,32 +1,38 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 
 import { EPHEMERAL_DURATION_HOURS } from '@/constants/status-categories';
 import { useAuth } from '@/context/auth-context';
-import { SEED_STATUSES } from '@/data/seed-statuses';
+import { supabase } from '@/lib/supabase';
 import type { Status, StatusCategory } from '@/types/status';
 
-const STORAGE_KEY = 'studangers.statuses.v1';
 const EPHEMERAL_DURATION_MS = EPHEMERAL_DURATION_HOURS * 60 * 60 * 1000;
 
-function isExpired(createdAt: string, now: Date) {
-  return now.getTime() - new Date(createdAt).getTime() > EPHEMERAL_DURATION_MS;
-}
+type StatusRow = {
+  id: string;
+  user_id: string;
+  author_name: string;
+  author_school: string;
+  content: string;
+  category: StatusCategory;
+  created_at: string;
+  expires_at: string;
+};
 
-function buildSeedStatuses(now: Date): Status[] {
-  return SEED_STATUSES.map((seed) => ({
-    id: seed.id,
-    authorName: seed.authorName,
-    authorSchool: seed.authorSchool,
-    content: seed.content,
-    category: seed.category,
-    createdAt: new Date(now.getTime() - seed.minutesAgo * 60 * 1000).toISOString(),
-    isMine: false,
-  }));
+function mapRow(row: StatusRow, myUserId: string | undefined): Status {
+  return {
+    id: row.id,
+    authorName: row.author_name,
+    authorSchool: row.author_school,
+    content: row.content,
+    category: row.category,
+    createdAt: row.created_at,
+    isMine: row.user_id === myUserId,
+  };
 }
 
 type StatusesContextValue = {
   statuses: Status[];
+  isLoading: boolean;
   addStatus: (content: string, category: StatusCategory) => Promise<void>;
 };
 
@@ -34,40 +40,69 @@ const StatusesContext = createContext<StatusesContextValue | null>(null);
 
 export function StatusesProvider({ children }: PropsWithChildren) {
   const { profile } = useAuth();
-  const [myStatuses, setMyStatuses] = useState<Status[]>([]);
-  const [seedStatuses] = useState<Status[]>(() => buildSeedStatuses(new Date()));
+  const [rows, setRows] = useState<StatusRow[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
-      if (raw) setMyStatuses(JSON.parse(raw));
-    });
-  }, []);
+    let isMounted = true;
 
-  const value = useMemo<StatusesContextValue>(() => {
-    const now = new Date();
-    const all = [...myStatuses, ...seedStatuses]
-      .filter((status) => !isExpired(status.createdAt, now))
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    async function load() {
+      if (!profile) {
+        if (isMounted) {
+          setRows([]);
+          setIsLoading(false);
+        }
+        return;
+      }
 
-    return {
-      statuses: all,
+      const { data } = await supabase
+        .from('statuses')
+        .select('*')
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false });
+
+      if (isMounted && data) setRows(data);
+      if (isMounted) setIsLoading(false);
+    }
+
+    load();
+
+    if (!profile) return;
+
+    const channel = supabase
+      .channel('public:statuses')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'statuses' }, (payload) => {
+        setRows((current) => [payload.new as StatusRow, ...current]);
+      })
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [profile]);
+
+  const value = useMemo<StatusesContextValue>(
+    () => ({
+      statuses: rows.map((row) => mapRow(row, profile?.id)),
+      isLoading,
       async addStatus(content, category) {
         if (!profile) return;
-        const newStatus: Status = {
-          id: `status-${Date.now()}`,
-          authorName: profile.firstName,
-          authorSchool: profile.school,
+        const createdAt = new Date();
+        const expiresAt = new Date(createdAt.getTime() + EPHEMERAL_DURATION_MS);
+        await supabase.from('statuses').insert({
+          user_id: profile.id,
+          author_name: profile.firstName,
+          author_school: profile.school,
           content,
           category,
-          createdAt: new Date().toISOString(),
-          isMine: true,
-        };
-        const next = [newStatus, ...myStatuses];
-        setMyStatuses(next);
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+          created_at: createdAt.toISOString(),
+          expires_at: expiresAt.toISOString(),
+        });
       },
-    };
-  }, [myStatuses, seedStatuses, profile]);
+    }),
+    [rows, isLoading, profile]
+  );
 
   return <StatusesContext.Provider value={value}>{children}</StatusesContext.Provider>;
 }

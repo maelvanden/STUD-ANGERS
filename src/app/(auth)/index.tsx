@@ -9,11 +9,13 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
+import { translateAuthError } from '@/lib/auth-errors';
 import { isValidEmail } from '@/lib/validation';
 
 export default function LoginScreen() {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -22,12 +24,16 @@ export default function LoginScreen() {
       setError('Entre une adresse email valide.');
       return;
     }
+    if (!password) {
+      setError('Entre ton mot de passe.');
+      return;
+    }
     setError(null);
     setIsSubmitting(true);
-    const success = await login(email);
+    const result = await login(email, password);
     setIsSubmitting(false);
-    if (!success) {
-      setError("Aucun compte trouvé avec cet email sur cet appareil. Crée un compte ci-dessous.");
+    if (!result.success) {
+      setError(translateAuthError(result.error));
     }
   }
 
@@ -54,6 +60,15 @@ export default function LoginScreen() {
                 keyboardType="email-address"
                 value={email}
                 onChangeText={setEmail}
+              />
+              <TextField
+                label="Mot de passe"
+                placeholder="••••••••"
+                secureTextEntry
+                autoCapitalize="none"
+                autoComplete="password"
+                value={password}
+                onChangeText={setPassword}
                 error={error ?? undefined}
               />
               <PrimaryButton label="Se connecter" onPress={handleSubmit} loading={isSubmitting} />
