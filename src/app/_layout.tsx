@@ -4,9 +4,11 @@ import { useColorScheme } from 'react-native';
 
 import { FullScreenLoader } from '@/components/full-screen-loader';
 import { AuthProvider, useAuth } from '@/context/auth-context';
+import { useTheme } from '@/hooks/use-theme';
 
 function RootNavigator() {
   const { isLoading, profile } = useAuth();
+  const theme = useTheme();
 
   if (isLoading) {
     return <FullScreenLoader />;
@@ -16,6 +18,16 @@ function RootNavigator() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={!!profile}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="partner/[id]"
+          options={{
+            headerShown: true,
+            title: 'Partenaire',
+            presentation: 'modal',
+            headerStyle: { backgroundColor: theme.background },
+            headerTintColor: theme.text,
+          }}
+        />
       </Stack.Protected>
       <Stack.Protected guard={!profile}>
         <Stack.Screen name="(auth)" />

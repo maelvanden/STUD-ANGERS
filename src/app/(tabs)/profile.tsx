@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/form/primary-button';
@@ -23,39 +24,44 @@ export default function ProfileScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ThemedView type="backgroundElement" style={[styles.avatar, { borderColor: theme.tint }]}>
-          <Ionicons name="person" size={36} color={theme.tint} />
-        </ThemedView>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <ThemedView style={styles.centered}>
+            <ThemedView type="backgroundElement" style={[styles.avatar, { borderColor: theme.tint }]}>
+              <Ionicons name="person" size={36} color={theme.tint} />
+            </ThemedView>
 
-        <ThemedText type="title" style={styles.name}>
-          {profile.firstName}, {profile.age} ans
-        </ThemedText>
-        <ThemedText themeColor="textSecondary">{profile.school}</ThemedText>
+            <ThemedText type="title" style={styles.name}>
+              {profile.firstName}, {profile.age} ans
+            </ThemedText>
+            <ThemedText themeColor="textSecondary">{profile.school}</ThemedText>
 
-        {profile.bio ? (
-          <ThemedText style={styles.bio}>{profile.bio}</ThemedText>
-        ) : null}
+            {profile.bio ? <ThemedText style={styles.bio}>{profile.bio}</ThemedText> : null}
 
-        {tagLabels.length > 0 ? (
-          <ThemedView style={styles.tagRow}>
-            {tagLabels.map((label) => (
-              <ThemedView key={label} type="backgroundSelected" style={styles.tag}>
-                <ThemedText type="small">{label}</ThemedText>
+            {tagLabels.length > 0 ? (
+              <ThemedView style={styles.tagRow}>
+                {tagLabels.map((label) => (
+                  <ThemedView key={label} type="backgroundSelected" style={styles.tag}>
+                    <ThemedText type="small">{label}</ThemedText>
+                  </ThemedView>
+                ))}
               </ThemedView>
-            ))}
+            ) : null}
           </ThemedView>
-        ) : null}
 
-        <ThemedView type="backgroundElement" style={styles.comingSoonPill}>
-          <Ionicons name="qr-code-outline" size={14} color={theme.accent} />
-          <ThemedText type="small" style={{ color: theme.accent }}>
-            Carte membre & QR code — Étape 3
-          </ThemedText>
-        </ThemedView>
+          <ThemedView type="backgroundElement" style={[styles.memberCard, { borderColor: theme.tint }]}>
+            <ThemedText type="smallBold">Carte membre Stud&apos;Angers</ThemedText>
+            <ThemedView type="backgroundElement" style={styles.qrWrapper}>
+              <QRCode value={`STUDANGERS-MEMBER:${profile.email}`} size={140} backgroundColor="transparent" color={theme.text} />
+            </ThemedView>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.qrHint}>
+              Présente ce QR code chez nos partenaires pour profiter des bons plans.
+            </ThemedText>
+          </ThemedView>
 
-        <ThemedView style={styles.signOut}>
-          <PrimaryButton label="Se déconnecter" onPress={signOut} variant="ghost" />
-        </ThemedView>
+          <ThemedView style={styles.signOut}>
+            <PrimaryButton label="Se déconnecter" onPress={signOut} variant="ghost" />
+          </ThemedView>
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -67,9 +73,15 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    alignItems: 'center',
+  },
+  scrollContent: {
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.six,
+    paddingTop: Spacing.five,
+    paddingBottom: Spacing.four,
+    gap: Spacing.four,
+  },
+  centered: {
+    alignItems: 'center',
     gap: Spacing.two,
   },
   avatar: {
@@ -95,25 +107,28 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: Spacing.two,
-    marginTop: Spacing.three,
+    marginTop: Spacing.one,
   },
   tag: {
     borderRadius: Spacing.five,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one,
   },
-  comingSoonPill: {
-    flexDirection: 'row',
+  memberCard: {
     alignItems: 'center',
-    gap: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.five,
-    marginTop: Spacing.four,
+    gap: Spacing.two,
+    borderWidth: 1,
+    borderRadius: Spacing.four,
+    padding: Spacing.four,
+  },
+  qrWrapper: {
+    padding: Spacing.three,
+    borderRadius: Spacing.three,
+  },
+  qrHint: {
+    textAlign: 'center',
   },
   signOut: {
-    marginTop: 'auto',
     alignSelf: 'stretch',
-    paddingBottom: Spacing.four,
   },
 });
