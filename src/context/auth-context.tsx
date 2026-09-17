@@ -13,6 +13,8 @@ type RegisterInput = PendingProfile & {
   password: string;
 };
 
+type ProfileUpdates = Partial<Pick<StudentProfile, 'firstName' | 'age' | 'school' | 'bio' | 'tags' | 'avatarUrl'>>;
+
 type AuthResult = { success: true; needsEmailConfirmation?: boolean } | { success: false; error: string };
 
 type AuthContextValue = {
@@ -20,6 +22,7 @@ type AuthContextValue = {
   profile: StudentProfile | null;
   login: (email: string, password: string) => Promise<AuthResult>;
   register: (input: RegisterInput) => Promise<AuthResult>;
+  updateProfile: (updates: ProfileUpdates) => Promise<AuthResult>;
   signOut: () => Promise<void>;
 };
 
@@ -32,6 +35,7 @@ function mapRow(
     school: string;
     bio: string | null;
     tags: string[] | null;
+    avatar_url: string | null;
   },
   userId: string,
   email: string
@@ -44,6 +48,7 @@ function mapRow(
     school: row.school,
     bio: row.bio ?? '',
     tags: (row.tags ?? []) as StudentProfile['tags'],
+    avatarUrl: row.avatar_url,
   };
 }
 
@@ -56,6 +61,7 @@ async function createProfileRow(userId: string, email: string, pending: PendingP
     school: pending.school,
     bio: pending.bio,
     tags: pending.tags,
+    avatar_url: pending.avatarUrl,
   });
 }
 
@@ -126,6 +132,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
         await AsyncStorage.setItem(`${PENDING_PROFILE_KEY}:${email.trim().toLowerCase()}`, JSON.stringify(pending));
         return { success: true, needsEmailConfirmation: true };
+      },
+      async updateProfile(updates) {
+        if (!profile) return { success: false, error: 'Tu dois être connecté·e.' };
+
+        const payload: Record<string, unknown> = {};
+        if (updates.firstName !== undefined) payload.first_name = updates.firstName;
+        if (updates.age !== undefined) payload.age = updates.age;
+        if (updates.school !== undefined) payload.school = updates.school;
+        if (updates.bio !== undefined) payload.bio = updates.bio;
+        if (updates.tags !== undefined) payload.tags = updates.tags;
+        if (updates.avatarUrl !== undefined) payload.avatar_url = updates.avatarUrl;
+
+        const { error } = await supabase.from('profiles').update(payload).eq('id', profile.id);
+        if (error) return { success: false, error: error.message };
+
+        setProfile({ ...profile, ...updates });
+        return { success: true };
       },
       async signOut() {
         await supabase.auth.signOut();

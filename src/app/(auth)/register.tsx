@@ -135,6 +135,7 @@ export default function RegisterScreen() {
       school,
       bio: bio.trim(),
       tags,
+      avatarUrl: null,
     });
 
     if (!result.success) {

@@ -1,9 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/form/primary-button';
+import { AvatarPicker } from '@/components/profile/avatar-picker';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { INTEREST_TAGS } from '@/constants/profile-options';
@@ -26,9 +27,7 @@ export default function ProfileScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <ThemedView style={styles.centered}>
-            <ThemedView type="backgroundElement" style={[styles.avatar, { borderColor: theme.tint }]}>
-              <Ionicons name="person" size={36} color={theme.tint} />
-            </ThemedView>
+            <AvatarPicker />
 
             <ThemedText type="title" style={styles.name}>
               {profile.firstName}, {profile.age} ans
@@ -58,7 +57,8 @@ export default function ProfileScreen() {
             </ThemedText>
           </ThemedView>
 
-          <ThemedView style={styles.signOut}>
+          <ThemedView style={styles.actions}>
+            <PrimaryButton label="Modifier mon profil" onPress={() => router.push('/edit-profile')} variant="ghost" />
             <PrimaryButton label="Se déconnecter" onPress={signOut} variant="ghost" />
           </ThemedView>
         </ScrollView>
@@ -83,15 +83,6 @@ const styles = StyleSheet.create({
   centered: {
     alignItems: 'center',
     gap: Spacing.two,
-  },
-  avatar: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.two,
   },
   name: {
     fontSize: 24,
@@ -128,7 +119,8 @@ const styles = StyleSheet.create({
   qrHint: {
     textAlign: 'center',
   },
-  signOut: {
+  actions: {
     alignSelf: 'stretch',
+    gap: Spacing.two,
   },
 });

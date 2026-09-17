@@ -8,4 +8,5 @@ export type StudentProfile = {
   school: string;
   bio: string;
   tags: InterestTagId[];
+  avatarUrl: string | null;
 };

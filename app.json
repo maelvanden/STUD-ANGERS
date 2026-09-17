@@ -35,6 +35,12 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Stud'Angers a besoin d'accéder à tes photos pour changer ta photo de profil."
+        }
       ]
     ],
     "experiments": {

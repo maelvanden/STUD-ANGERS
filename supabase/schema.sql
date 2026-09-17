@@ -132,3 +132,31 @@ values
   ('Tournoi de futsal inter-écoles', 'Tournoi amical entre étudiants des écoles angevines.', now() + interval '7 days', 'Complexe sportif Jean Bouin'),
   ('Concert étudiant au Chabada', 'Scène ouverte aux groupes étudiants angevins.', now() + interval '10 days', 'Le Chabada, Angers')
 on conflict (title) do nothing;
+
+-- 5. Stockage des photos de profil
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
+drop policy if exists "Les photos de profil sont publiques" on storage.objects;
+create policy "Les photos de profil sont publiques"
+  on storage.objects for select
+  using (bucket_id = 'avatars');
+
+drop policy if exists "Un utilisateur peut ajouter sa propre photo" on storage.objects;
+create policy "Un utilisateur peut ajouter sa propre photo"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists "Un utilisateur peut modifier sa propre photo" on storage.objects;
+create policy "Un utilisateur peut modifier sa propre photo"
+  on storage.objects for update
+  to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists "Un utilisateur peut supprimer sa propre photo" on storage.objects;
+create policy "Un utilisateur peut supprimer sa propre photo"
+  on storage.objects for delete
+  to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);

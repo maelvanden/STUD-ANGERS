@@ -51,6 +51,16 @@ function RootNavigator() {
             headerTintColor: theme.text,
           }}
         />
+        <Stack.Screen
+          name="edit-profile"
+          options={{
+            headerShown: true,
+            title: 'Modifier mon profil',
+            presentation: 'modal',
+            headerStyle: { backgroundColor: theme.background },
+            headerTintColor: theme.text,
+          }}
+        />
       </Stack.Protected>
       <Stack.Protected guard={!profile}>
         <Stack.Screen name="(auth)" />
