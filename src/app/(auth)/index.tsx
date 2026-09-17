@@ -1,12 +1,12 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AuthBackground } from '@/components/auth-background';
 import { PrimaryButton } from '@/components/form/primary-button';
 import { TextField } from '@/components/form/text-field';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
 import { translateAuthError } from '@/lib/auth-errors';
@@ -38,20 +38,20 @@ export default function LoginScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <AuthBackground>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         <SafeAreaView style={styles.flex}>
           <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-            <ThemedView style={styles.hero}>
+            <View style={styles.hero}>
               <ThemedText type="title" style={styles.title}>
                 Stud&apos;Angers
               </ThemedText>
               <ThemedText themeColor="textSecondary" style={styles.subtitle}>
                 Bons plans étudiants et rencontres à Angers.
               </ThemedText>
-            </ThemedView>
+            </View>
 
-            <ThemedView style={styles.form}>
+            <View style={styles.form}>
               <TextField
                 label="Email étudiant"
                 placeholder="prenom.nom@etu.univ-angers.fr"
@@ -72,25 +72,22 @@ export default function LoginScreen() {
                 error={error ?? undefined}
               />
               <PrimaryButton label="Se connecter" onPress={handleSubmit} loading={isSubmitting} />
-            </ThemedView>
+            </View>
 
-            <ThemedView style={styles.footer}>
+            <View style={styles.footer}>
               <ThemedText themeColor="textSecondary">Pas encore de compte ?</ThemedText>
               <Link href="/(auth)/register" asChild>
                 <ThemedText type="linkPrimary">Créer un compte</ThemedText>
               </Link>
-            </ThemedView>
+            </View>
           </ScrollView>
         </SafeAreaView>
       </KeyboardAvoidingView>
-    </ThemedView>
+    </AuthBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   flex: {
     flex: 1,
   },
