@@ -4,6 +4,8 @@ import { useColorScheme } from 'react-native';
 
 import { FullScreenLoader } from '@/components/full-screen-loader';
 import { AuthProvider, useAuth } from '@/context/auth-context';
+import { ChatProvider } from '@/context/chat-context';
+import { StatusesProvider } from '@/context/statuses-context';
 import { useTheme } from '@/hooks/use-theme';
 
 function RootNavigator() {
@@ -28,6 +30,25 @@ function RootNavigator() {
             headerTintColor: theme.text,
           }}
         />
+        <Stack.Screen
+          name="new-status"
+          options={{
+            headerShown: true,
+            title: 'Nouveau statut',
+            presentation: 'modal',
+            headerStyle: { backgroundColor: theme.background },
+            headerTintColor: theme.text,
+          }}
+        />
+        <Stack.Screen
+          name="chat/[statusId]"
+          options={{
+            headerShown: true,
+            title: 'Discussion',
+            headerStyle: { backgroundColor: theme.background },
+            headerTintColor: theme.text,
+          }}
+        />
       </Stack.Protected>
       <Stack.Protected guard={!profile}>
         <Stack.Screen name="(auth)" />
@@ -44,7 +65,11 @@ export default function RootLayout() {
     <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <AuthProvider>
-        <RootNavigator />
+        <StatusesProvider>
+          <ChatProvider>
+            <RootNavigator />
+          </ChatProvider>
+        </StatusesProvider>
       </AuthProvider>
     </ThemeProvider>
   );
