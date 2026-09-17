@@ -72,7 +72,8 @@ export function StatusesProvider({ children }: PropsWithChildren) {
     const channel = supabase
       .channel('public:statuses')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'statuses' }, (payload) => {
-        setRows((current) => [payload.new as StatusRow, ...current]);
+        const newRow = payload.new as StatusRow;
+        setRows((current) => (current.some((row) => row.id === newRow.id) ? current : [newRow, ...current]));
       })
       .subscribe();
 
@@ -90,15 +91,23 @@ export function StatusesProvider({ children }: PropsWithChildren) {
         if (!profile) return;
         const createdAt = new Date();
         const expiresAt = new Date(createdAt.getTime() + EPHEMERAL_DURATION_MS);
-        await supabase.from('statuses').insert({
-          user_id: profile.id,
-          author_name: profile.firstName,
-          author_school: profile.school,
-          content,
-          category,
-          created_at: createdAt.toISOString(),
-          expires_at: expiresAt.toISOString(),
-        });
+        const { data } = await supabase
+          .from('statuses')
+          .insert({
+            user_id: profile.id,
+            author_name: profile.firstName,
+            author_school: profile.school,
+            content,
+            category,
+            created_at: createdAt.toISOString(),
+            expires_at: expiresAt.toISOString(),
+          })
+          .select()
+          .single();
+
+        if (data) {
+          setRows((current) => (current.some((row) => row.id === data.id) ? current : [data, ...current]));
+        }
       },
     }),
     [rows, isLoading, profile]
