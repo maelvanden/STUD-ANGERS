@@ -61,6 +61,16 @@ function RootNavigator() {
             headerTintColor: theme.text,
           }}
         />
+        <Stack.Screen
+          name="event/[id]"
+          options={{
+            headerShown: true,
+            title: 'Événement',
+            presentation: 'modal',
+            headerStyle: { backgroundColor: theme.background },
+            headerTintColor: theme.text,
+          }}
+        />
       </Stack.Protected>
       <Stack.Protected guard={!profile}>
         <Stack.Screen name="(auth)" />

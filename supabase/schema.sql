@@ -133,6 +133,36 @@ values
   ('Concert étudiant au Chabada', 'Scène ouverte aux groupes étudiants angevins.', now() + interval '10 days', 'Le Chabada, Angers')
 on conflict (title) do nothing;
 
+-- 4bis. Participants aux événements
+create table if not exists public.event_participants (
+  event_id uuid not null references public.events (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  participant_name text not null,
+  participant_school text not null,
+  created_at timestamptz not null default now(),
+  primary key (event_id, user_id)
+);
+
+alter table public.event_participants enable row level security;
+
+drop policy if exists "Les utilisateurs connectés voient les participants" on public.event_participants;
+create policy "Les utilisateurs connectés voient les participants"
+  on public.event_participants for select
+  to authenticated
+  using (true);
+
+drop policy if exists "Un utilisateur peut s'inscrire à un événement" on public.event_participants;
+create policy "Un utilisateur peut s'inscrire à un événement"
+  on public.event_participants for insert
+  to authenticated
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Un utilisateur peut se désinscrire d'un événement" on public.event_participants;
+create policy "Un utilisateur peut se désinscrire d'un événement"
+  on public.event_participants for delete
+  to authenticated
+  using (auth.uid() = user_id);
+
 -- 5. Stockage des photos de profil
 insert into storage.buckets (id, name, public)
 values ('avatars', 'avatars', true)
