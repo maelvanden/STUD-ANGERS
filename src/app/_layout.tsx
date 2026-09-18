@@ -1,17 +1,41 @@
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import * as Notifications from 'expo-notifications';
+import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from 'react-native';
+import { useEffect } from 'react';
+import { Platform, useColorScheme } from 'react-native';
 
 import { FullScreenLoader } from '@/components/full-screen-loader';
 import { SupabaseConfigNeeded } from '@/components/supabase-config-needed';
 import { AuthProvider, useAuth } from '@/context/auth-context';
 import { StatusesProvider } from '@/context/statuses-context';
+import { usePushRegistration } from '@/hooks/use-push-registration';
 import { useTheme } from '@/hooks/use-theme';
 import { isSupabaseConfigured } from '@/lib/supabase';
+
+type MessageNotificationData = {
+  statusId: string;
+  authorId: string;
+  participantId: string;
+};
 
 function RootNavigator() {
   const { isLoading, profile } = useAuth();
   const theme = useTheme();
+
+  usePushRegistration();
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as Partial<MessageNotificationData>;
+      if (data.statusId && data.authorId && data.participantId) {
+        router.push(`/chat/${data.statusId}?authorId=${data.authorId}&participantId=${data.participantId}`);
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   if (isLoading) {
     return <FullScreenLoader />;

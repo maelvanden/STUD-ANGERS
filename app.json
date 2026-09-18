@@ -41,6 +41,13 @@
         {
           "photosPermission": "Stud'Angers a besoin d'accéder à tes photos pour changer ta photo de profil."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/android-icon-foreground.png",
+          "color": "#7C3AED"
+        }
       ]
     ],
     "experiments": {

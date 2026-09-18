@@ -11,6 +11,7 @@ import { Spacing } from '@/constants/theme';
 import { useEventParticipants } from '@/hooks/use-event-participants';
 import { useEvents } from '@/hooks/use-events';
 import { useTheme } from '@/hooks/use-theme';
+import { cancelEventReminder, scheduleEventReminder } from '@/lib/event-reminders';
 import { errorHaptic, successHaptic } from '@/lib/haptics';
 import { formatEventDate } from '@/lib/time-format';
 
@@ -37,6 +38,7 @@ export default function EventDetailScreen() {
   }
 
   async function handleToggle() {
+    if (!event) return;
     setIsSubmitting(true);
     setError(null);
     const result = isParticipating ? await leave() : await join();
@@ -47,7 +49,12 @@ export default function EventDetailScreen() {
       setError(result.error);
       return;
     }
-    if (!isParticipating) successHaptic();
+    if (!isParticipating) {
+      successHaptic();
+      await scheduleEventReminder(event.id, event.title, event.date);
+    } else {
+      await cancelEventReminder(event.id);
+    }
   }
 
   return (

@@ -204,6 +204,22 @@ begin
   end if;
 end $$;
 
+-- 4quater. Tokens de notifications push
+create table if not exists public.push_tokens (
+  token text primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+alter table public.push_tokens enable row level security;
+
+drop policy if exists "Un utilisateur gère ses propres tokens" on public.push_tokens;
+create policy "Un utilisateur gère ses propres tokens"
+  on public.push_tokens for all
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
 -- 5. Stockage des photos de profil
 insert into storage.buckets (id, name, public)
 values ('avatars', 'avatars', true)
