@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { useLocalSearchParams, router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,7 +6,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChipSelector } from '@/components/form/chip-selector';
 import { PrimaryButton } from '@/components/form/primary-button';
 import { TextField } from '@/components/form/text-field';
-import { StatusSuggestions } from '@/components/statuses/status-suggestions';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { STATUS_CATEGORIES } from '@/constants/status-categories';
@@ -15,11 +14,14 @@ import { useStatuses } from '@/context/statuses-context';
 import type { StatusCategory } from '@/types/status';
 
 const CATEGORY_CHIPS = STATUS_CATEGORIES.map((category) => ({ id: category.id, label: category.label }));
+const CATEGORY_IDS = STATUS_CATEGORIES.map((category) => category.id);
 
 export default function NewStatusScreen() {
   const { addStatus } = useStatuses();
-  const [content, setContent] = useState('');
-  const [category, setCategory] = useState<StatusCategory>('bar');
+  const params = useLocalSearchParams<{ category?: string; content?: string }>();
+  const prefilledCategory = CATEGORY_IDS.find((id) => id === params.category);
+  const [content, setContent] = useState(params.content ?? '');
+  const [category, setCategory] = useState<StatusCategory>(prefilledCategory ?? 'bar');
   const [error, setError] = useState<string | null>(null);
 
   async function handlePublish() {
@@ -50,11 +52,6 @@ export default function NewStatusScreen() {
             <ThemedView style={styles.fieldGroup}>
               <ThemedText type="smallBold">Catégorie</ThemedText>
               <ChipSelector chips={CATEGORY_CHIPS} selected={[category]} onToggle={(id) => setCategory(id as StatusCategory)} />
-            </ThemedView>
-
-            <ThemedView style={styles.fieldGroup}>
-              <ThemedText type="smallBold">Besoin d&apos;inspiration ?</ThemedText>
-              <StatusSuggestions category={category} onSelect={setContent} />
             </ThemedView>
 
             <TextField

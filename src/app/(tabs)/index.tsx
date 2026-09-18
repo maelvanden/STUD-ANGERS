@@ -6,9 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FullScreenLoader } from '@/components/full-screen-loader';
 import { CategoryFilter } from '@/components/statuses/category-filter';
+import { ExampleStatusCard } from '@/components/statuses/example-status-card';
 import { StatusCard } from '@/components/statuses/status-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { STATUS_EXAMPLES } from '@/constants/status-examples';
 import { Spacing } from '@/constants/theme';
 import { useStatuses } from '@/context/statuses-context';
 import { useTheme } from '@/hooks/use-theme';
@@ -22,6 +24,11 @@ export default function HomeScreen() {
   const filteredStatuses = useMemo(
     () => (category ? statuses.filter((status) => status.category === category) : statuses),
     [statuses, category]
+  );
+
+  const examples = useMemo(
+    () => (category ? STATUS_EXAMPLES.filter((example) => example.category === category) : STATUS_EXAMPLES),
+    [category]
   );
 
   return (
@@ -56,6 +63,16 @@ export default function HomeScreen() {
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => <StatusCard status={item} />}
             contentContainerStyle={styles.list}
+            ListHeaderComponent={
+              <ThemedView style={styles.examplesSection}>
+                <ThemedText type="smallBold">Des exemples pour t&apos;inspirer</ThemedText>
+                <ThemedView style={styles.examplesList}>
+                  {examples.map((example) => (
+                    <ExampleStatusCard key={example.id} example={example} />
+                  ))}
+                </ThemedView>
+              </ThemedView>
+            }
             ListEmptyComponent={
               <ThemedText themeColor="textSecondary" style={styles.emptyText}>
                 {category
@@ -116,6 +133,13 @@ const styles = StyleSheet.create({
   emptyText: {
     textAlign: 'center',
     marginTop: Spacing.six,
+  },
+  examplesSection: {
+    gap: Spacing.two,
+    marginBottom: Spacing.four,
+  },
+  examplesList: {
+    gap: Spacing.three,
   },
   fab: {
     position: 'absolute',
