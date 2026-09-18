@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChipSelector } from '@/components/form/chip-selector';
 import { PrimaryButton } from '@/components/form/primary-button';
 import { TextField } from '@/components/form/text-field';
+import { StatusSuggestions } from '@/components/statuses/status-suggestions';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { STATUS_CATEGORIES } from '@/constants/status-categories';
@@ -49,6 +50,11 @@ export default function NewStatusScreen() {
             <ThemedView style={styles.fieldGroup}>
               <ThemedText type="smallBold">Catégorie</ThemedText>
               <ChipSelector chips={CATEGORY_CHIPS} selected={[category]} onToggle={(id) => setCategory(id as StatusCategory)} />
+            </ThemedView>
+
+            <ThemedView style={styles.fieldGroup}>
+              <ThemedText type="smallBold">Besoin d&apos;inspiration ?</ThemedText>
+              <StatusSuggestions category={category} onSelect={setContent} />
             </ThemedView>
 
             <TextField
