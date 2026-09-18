@@ -1,4 +1,4 @@
-import { useLocalSearchParams, router } from 'expo-router';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,14 +14,11 @@ import { useStatuses } from '@/context/statuses-context';
 import type { StatusCategory } from '@/types/status';
 
 const CATEGORY_CHIPS = STATUS_CATEGORIES.map((category) => ({ id: category.id, label: category.label }));
-const CATEGORY_IDS = STATUS_CATEGORIES.map((category) => category.id);
 
 export default function NewStatusScreen() {
   const { addStatus } = useStatuses();
-  const params = useLocalSearchParams<{ category?: string; content?: string }>();
-  const prefilledCategory = CATEGORY_IDS.find((id) => id === params.category);
-  const [content, setContent] = useState(params.content ?? '');
-  const [category, setCategory] = useState<StatusCategory>(prefilledCategory ?? 'bar');
+  const [content, setContent] = useState('');
+  const [category, setCategory] = useState<StatusCategory>('bar');
   const [error, setError] = useState<string | null>(null);
 
   async function handlePublish() {
