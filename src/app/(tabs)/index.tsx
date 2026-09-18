@@ -1,20 +1,28 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FullScreenLoader } from '@/components/full-screen-loader';
+import { CategoryFilter } from '@/components/statuses/category-filter';
 import { StatusCard } from '@/components/statuses/status-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useStatuses } from '@/context/statuses-context';
 import { useTheme } from '@/hooks/use-theme';
-import type { Status } from '@/types/status';
+import type { Status, StatusCategory } from '@/types/status';
 
 export default function HomeScreen() {
   const theme = useTheme();
   const { statuses, isLoading } = useStatuses();
+  const [category, setCategory] = useState<StatusCategory | null>(null);
+
+  const filteredStatuses = useMemo(
+    () => (category ? statuses.filter((status) => status.category === category) : statuses),
+    [statuses, category]
+  );
 
   return (
     <ThemedView style={styles.container}>
@@ -36,17 +44,23 @@ export default function HomeScreen() {
           </Pressable>
         </ThemedView>
 
+        <ThemedView style={styles.filterRow}>
+          <CategoryFilter selected={category} onChange={setCategory} />
+        </ThemedView>
+
         {isLoading ? (
           <FullScreenLoader />
         ) : (
           <FlatList<Status>
-            data={statuses}
+            data={filteredStatuses}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => <StatusCard status={item} />}
             contentContainerStyle={styles.list}
             ListEmptyComponent={
               <ThemedText themeColor="textSecondary" style={styles.emptyText}>
-                Aucun statut pour le moment. Sois le premier à proposer quelque chose !
+                {category
+                  ? 'Aucun statut dans cette catégorie pour le moment.'
+                  : 'Aucun statut pour le moment. Sois le premier à proposer quelque chose !'}
               </ThemedText>
             }
           />
@@ -88,6 +102,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     lineHeight: 30,
+  },
+  filterRow: {
+    paddingHorizontal: Spacing.four,
+    paddingBottom: Spacing.two,
   },
   list: {
     padding: Spacing.four,
