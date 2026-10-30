@@ -9,7 +9,6 @@ import { CategoryFilter } from '@/components/statuses/category-filter';
 import { StatusCard } from '@/components/statuses/status-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MOCK_STATUSES } from '@/constants/mock-statuses';
 import { Spacing } from '@/constants/theme';
 import { useStatuses } from '@/context/statuses-context';
 import { useTheme } from '@/hooks/use-theme';
@@ -21,10 +20,7 @@ export default function HomeScreen() {
   const [category, setCategory] = useState<StatusCategory | null>(null);
 
   const filteredStatuses = useMemo(() => {
-    const allStatuses = [...statuses, ...MOCK_STATUSES].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-    return category ? allStatuses.filter((status) => status.category === category) : allStatuses;
+    return category ? statuses.filter((status) => status.category === category) : statuses;
   }, [statuses, category]);
 
   return (
